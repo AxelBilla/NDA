@@ -1,5 +1,6 @@
 import pandas
 import re
+import sys
 import pyxlsb
 import openpyxl
 
@@ -22,7 +23,7 @@ class Column(IntEnum):
     Colors = 10
     Dimensions = 11
 
-    Found = 99
+    Found = 12
 
 # Returns the correct Nature of an item
 def GetNature(label, expected, categories = {}, include_partial = False):
@@ -32,18 +33,18 @@ def GetNature(label, expected, categories = {}, include_partial = False):
     clean_expected = unidecode(str(expected)).replace(" ", "")
     
     # Only 100% trusted source of truth
-    match = find_near_matches(clean_expected, clean_label, x_l_dist=3)
+    match = find_near_matches(clean_expected, clean_label, max_l_dist=1)
     if(match):
         return expected
 
     if (include_partial):
         for expected_word in clean_expected.split():
-            match = find_near_matches(expected_word, clean_label, max_l_dist=3)
+            match = find_near_matches(expected_word, clean_label, max_l_dist=1)
             if(match):
                 return expected
 
     for category in categories:
-        match = find_near_matches(unidecode(str(category)), clean_label, max_l_dist=3)
+        match = find_near_matches(unidecode(str(category)), clean_label, max_l_dist=1)
         if(match):
             return category
 
@@ -191,12 +192,12 @@ def Solve(sheet, errors):
 
     edits = {}
 
-    for i, row in sheet.iterrows():
-        code = str(row[columns[Column.Code]])
-        label = str(row[columns[Column.Label]])
-        nature = str(row[columns[Column.Nature]])
-        universe = str(row[columns[Column.Universe]])
-        found = str(row[columns[Column.Found]])
+    for i in range(len(errors[Column.Found])):
+        code = str(errors[columns[Column.Code]])
+        label = str(errors[columns[Column.Label]])
+        nature = str(errors[columns[Column.Nature]])
+        universe = str(errors[columns[Column.Universe]])
+        found = str(errors[Column.Found])
 
         if(found!="n/a"):
             found_match = GetMatch(label, found)
@@ -232,8 +233,8 @@ def Extra(sheet):
     extraneous_information = {}
 
     for i, row in sheet.iterrows():
-        code = row[columns[Column.Code]]
-        label = row[columns[Column.Label]]
+        code = str(row[columns[Column.Code]])
+        label = str(row[columns[Column.Label]])
 
         extraneous_information[code] = {Column.Colors: GetColors(label, color_names), Column.Dimensions: GetDimensions(label)}
 
@@ -259,14 +260,12 @@ def Merge(sheet, edits):
 
 
 def Start():
-    # [TO-DO]: Replace input with direct file access
-    sheet_path = "20210614 Ecommerce sales.xlsb" #input("Sheet Path: ")
+    sheet_path = str(sys.argv[1])
     sheet = pandas.read_excel(sheet_path)
 
-    sheet.insert(Column.Colors, "Couleurs", [], True)
-    sheet.insert(Column.Dimensions, "Dimensions", [], True)
-
-
+    sheet["Couleurs"] = ""
+    sheet["Dimensions"] = ""
+    
 
     extras = Extra(sheet)
 
@@ -274,7 +273,8 @@ def Start():
     edits = Solve(sheet, err)
     fixed = Merge(sheet, edits)
 
-    sheet.to_excel("fixed_"+sheet_path)
+    output_file_name = "fixed_"+re.sub(r"(?!\.)[^.]+$", "xls", sheet_path)
+    sheet.to_excel(output_file_name, index=False)
 
 
 Start()

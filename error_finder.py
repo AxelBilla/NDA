@@ -1,5 +1,6 @@
 import pandas
 import re
+import sys
 import pyxlsb
 import openpyxl
 
@@ -10,8 +11,18 @@ from enum import IntEnum
 class Column(IntEnum):
     Code = 0
     Label = 1
+    Seller = 2
     Universe = 3
     Nature = 4
+    Date = 5
+    Quantity = 6
+    Price = 7
+    Duration = 8
+    Description = 9
+    Colors = 10
+    Dimensions = 11
+
+    Found = 12
 
 # Returns the correct Nature of an item
 def GetNature(label, expected, categories = {}, include_partial = False):
@@ -21,18 +32,18 @@ def GetNature(label, expected, categories = {}, include_partial = False):
     clean_expected = unidecode(str(expected)).replace(" ", "")
     
     # Only 100% trusted source of truth
-    match = find_near_matches(clean_expected, clean_label, x_l_dist=3)
+    match = find_near_matches(clean_expected, clean_label, max_l_dist=1)
     if(match):
         return expected
 
     if (include_partial):
         for expected_word in clean_expected.split():
-            match = find_near_matches(expected_word, clean_label, max_l_dist=3)
+            match = find_near_matches(expected_word, clean_label, max_l_dist=1)
             if(match):
                 return expected
 
     for category in categories:
-        match = find_near_matches(unidecode(str(category)), clean_label, max_l_dist=3)
+        match = find_near_matches(unidecode(str(category)), clean_label, max_l_dist=1)
         if(match):
             return category
 
@@ -42,8 +53,7 @@ def GetNature(label, expected, categories = {}, include_partial = False):
 
 
 def Start():
-    # [TO-DO]: Replace input with direct file access
-    sheet_path = "20210614 Ecommerce sales.xlsb" #input("Sheet Path: ")
+    sheet_path = str(sys.argv[1])
     sheet = pandas.read_excel(sheet_path)
 
     columns = sheet.columns
@@ -101,7 +111,7 @@ def Start():
 
 
 
-    pandas.DataFrame(errors).to_excel("test.xlsx")
+    pandas.DataFrame(errors).to_excel("test.xlsx", index=False)
 
 
 Start()

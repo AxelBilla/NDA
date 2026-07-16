@@ -1,18 +1,19 @@
 import pandas
+import sys
 import openpyxl
 from transformers import pipeline
 
 from enum import IntEnum
 
 class Column(IntEnum):
-    Code = 1
-    Label = 2
-    Universe = 3
-    Nature = 4
-    Found = 5
+    Code = 0
+    Label = 1
+    Universe = 2
+    Nature = 3
+    Found = 4
     
 def GetMatch(label, category):
-    classifier = pipeline("zero-shot-classification", model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli")
+    classifier = pipeline("zero-shot-classification", model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli", device="cuda")
     processed_results = classifier(label, category, multi_label=False)
     
     return processed_results
@@ -21,7 +22,7 @@ def IsMatch(match, acceptable_threshold = 0.02):
     return GetMatch(label, category)["scores"][0] > acceptable_threshold
 
 def GetBestMatches(label, *possible_categories, acceptable_threshold = 0.02):
-    classifier = pipeline("zero-shot-classification", model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli")
+    classifier = pipeline("zero-shot-classification", model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli", device="cuda")
     processed_results = classifier(label, possible_categories[0], multi_label=False)
 
     best_matches = []
@@ -55,8 +56,7 @@ def GetBestMatch(label, universe, category, *possible_categories):
 
 
 def Start():    
-    # [TO-DO]: Replace input with direct file access
-    sheet_path = "errors.xlsx" #input("Sheet Path: ")
+    sheet_path = str(sys.argv[1])
     sheet = pandas.read_excel(sheet_path)
 
     columns = sheet.columns
@@ -96,7 +96,7 @@ def Start():
             edits[columns[Column.Nature]].append(GetBestMatch(label, universe, nature, categories)["category"])
 
     
-    pandas.DataFrame(edits).to_excel("edits.xlsx")
+    pandas.DataFrame(edits).to_excel("edits.xlsx", index=False)
 
 
 Start()
