@@ -273,7 +273,7 @@ def Start():
     edits = Solve(sheet, err)
     fixed = Merge(sheet, edits)
 
-    output_file_name = "fixed_"+re.sub(r"(?!\.)[^.]+$", "xls", sheet_path)
+    output_file_name = "fixed_"+re.sub(r"(?!\.)[^.]+$", "xlsx", sheet_path)
     sheet.to_excel(output_file_name, index=False)
 
 
