@@ -193,11 +193,11 @@ def Solve(sheet, errors):
     edits = {}
 
     for i in range(len(errors[Column.Found])):
-        code = str(errors[columns[Column.Code]])
-        label = str(errors[columns[Column.Label]])
-        nature = str(errors[columns[Column.Nature]])
-        universe = str(errors[columns[Column.Universe]])
-        found = str(errors[Column.Found])
+        code = str(errors[columns[Column.Code]][i])
+        label = str(errors[columns[Column.Label]][i])
+        nature = str(errors[columns[Column.Nature]][i])
+        universe = str(errors[columns[Column.Universe]][i])
+        found = str(errors[Column.Found][i])
 
         if(found!="n/a"):
             found_match = GetMatch(label, found)
@@ -246,11 +246,11 @@ def Merge(sheet, edits):
     columns = sheet.columns
 
     for i, row in sheet.iterrows():
-        code = row[columns[Column.Code]]
+        code = str(row[columns[Column.Code]])
         
         if(code in edits):
-            for column in edits[code].keys:                    
-                row[columns[column]] = edits[code][column]
+            for column in edits[code].keys():  
+                sheet.at[int(i), columns[column]] = edits[code][column]
 
     return sheet
 
@@ -271,7 +271,9 @@ def Start():
 
     err = Find(sheet)
     edits = Solve(sheet, err)
-    fixed = Merge(sheet, edits)
+    
+    sheet = Merge(sheet, edits)
+    sheet = Merge(sheet, extras)
 
     output_file_name = "fixed_"+re.sub(r"(?!\.)[^.]+$", "xlsx", sheet_path)
     sheet.to_excel(output_file_name, index=False)
